@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title> Gracefull Snake Game</title>
+
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        background: #111;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-family: Arial, sans-serif;
+    }
+
+    h1 {
+        color: #0f0;
+        margin-bottom: 5px;
+    }
+
+    #scoreBoard {
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+
+    canvas {
+        background: #000;
+        border: 4px solid #0f0;
+        display: none;
+    }
+
+    #startScreen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #startScreen button {
+        padding: 15px 35px;
+        font-size: 20px;
+        background: rgb(0, 255, 234);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+
+    #startScreen button:hover {
+        background: #bf81e6;
+    }
+
+    #gameOverScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background:
+            linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+            url("gameover.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        color: rgb(255, 0, 255);
+        animation: fadeIn 0.8s ease-in-out;
+        overflow: hidden;
+    }
+
+    #gameOverScreen h2 {
+        font-size: 70px;
+        letter-spacing: 6px;
+        margin-bottom: 20px;
+        z-index: 1;
+        position: relative;
+    }
+
+    #gameOverScreen p {
+        font-size: 24px;
+        margin-bottom: 30px;
+        z-index: 1;
+        position: relative;
+    }
+
+    #gameOverScreen button {
+        padding: 14px 30px;
+        font-size: 18px;
+        background: rgb(0, 255, 234);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 1;
+        position: relative;
+    }
+
+    #gameOverScreen button:hover {
+        background: #7CFC00;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+   
+    .bubble {
+        position: absolute;
+        bottom: -20px;
+        border-radius: 50%;
+        background-color: rgba(0, 255, 255, 0.5);
+        pointer-events: none;
+        animation-name: rise;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+    }
+
+    @keyframes rise {
+        0% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-100vh) scale(0.5);
+            opacity: 0;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<h1> Gracefull🐍 Snake Game</h1>
+<div id="scoreBoard">Score: <span id="score">0</span></div>
+
+<div id="startScreen">
+    <p>Start Gracefull Game</p>
+    <button onclick="startGame()">Start Game</button>
+</div>
+
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+
+<div id="gameOverScreen">
+   
+    <div id="bubbleContainer"></div>
+
+    <h2>Gracefull Game OVER</h2>
+    <p>Final Score: <span id="finalScore"></span></p>
+    <button onclick="restartGame()">Give a Gracefull Try Again</button>
+</div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const box = 20;
+    let score = 0;
+    let direction = "RIGHT";
+    let game = null;
+    let isRunning = false;
+
+    let snake;
+    let food;
+
+    document.addEventListener("keydown", changeDirection);
+
+    function initGame() {
+        score = 0;
+        direction = "RIGHT";
+        snake = [{ x: 8 * box, y: 10 * box }];
+        food = generateFood();
+        document.getElementById("score").innerText = score;
+    }
+
+    function startGame() {
+        if (isRunning) return;
+
+        document.getElementById("startScreen").style.display = "none";
+        canvas.style.display = "block";
+
+        initGame();
+        isRunning = true;
+        game = setInterval(draw, 200);
+    }
+
+    function changeDirection(event) {
+        if (!isRunning) return;
+
+        if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+        else if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+        else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+        else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    }
+
+    function generateFood() {
+        return {
+            x: Math.floor(Math.random() * 19) * box,
+            y: Math.floor(Math.random() * 19) * box
+        };
+    }
+
+    function collision(head, body) {
+        return body.some(segment => segment.x === head.x && segment.y === head.y);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+     
+        snake.forEach((segment, index) => {
+            ctx.fillStyle = index === 0 ? "#7CFC00" : "#0f0";
+            ctx.fillRect(segment.x, segment.y, box, box);
+        });
+
+        
+        ctx.fillStyle = "red";
+        ctx.fillRect(food.x, food.y, box, box);
+
+        let headX = snake[0].x;
+        let headY = snake[0].y;
+
+        if (direction === "LEFT") headX -= box;
+        if (direction === "UP") headY -= box;
+        if (direction === "RIGHT") headX += box;
+        if (direction === "DOWN") headY += box;
+
+        let newHead = { x: headX, y: headY };
+
+        if (
+            headX < 0 || headY < 0 ||
+            headX >= canvas.width || headY >= canvas.height ||
+            collision(newHead, snake)
+        ) {
+            endGame();
+            return;
+        }
+
+        if (headX === food.x && headY === food.y) {
+            score++;
+            document.getElementById("score").innerText = score;
+            food = generateFood();
+        } else {
+            snake.pop();
+        }
+
+        snake.unshift(newHead);
+    }
+
+    function endGame() {
+        clearInterval(game);
+        isRunning = false;
+        document.getElementById("finalScore").innerText = score;
+        document.getElementById("gameOverScreen").style.display = "flex";
+
+       
+        const container = document.getElementById("bubbleContainer");
+        container.innerHTML = ""; 
+        for (let i = 0; i < 50; i++) { 
+            let bubble = document.createElement("div");
+            bubble.classList.add("bubble");
+            bubble.style.left = Math.random() * 100 + "vw"; 
+            let size = Math.random() * 20 + 10; 
+            bubble.style.width = bubble.style.height = size + "px";
+            bubble.style.animationDuration = 3 + Math.random() * 3 + "s"; 
+            container.appendChild(bubble);
+        }
+    }
+
+    function restartGame() {
+        location.reload();
+    }
+</script>
+
+</body>
+</html>
